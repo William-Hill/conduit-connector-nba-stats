@@ -3,9 +3,9 @@ package main
 import (
 	sdk "github.com/conduitio/conduit-connector-sdk"
 
-	connectorname "github.com/conduitio/conduit-connector-connectorname"
+	nbastats "github.com/repository/conduit-connector-nba-stats"
 )
 
 func main() {
-	sdk.Serve(connectorname.Connector)
+	sdk.Serve(nbastats.Connector)
 }

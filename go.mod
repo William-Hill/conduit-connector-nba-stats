@@ -1,4 +1,4 @@
-module github.com/conduitio/conduit-connector-connectorname
+module github.com/repository/conduit-connector-nba-stats
 
 go 1.20
 
