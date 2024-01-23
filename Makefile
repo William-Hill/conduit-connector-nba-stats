@@ -3,7 +3,7 @@
 VERSION=$(shell git describe --tags --dirty --always)
 
 build:
-	go build -ldflags "-X 'github.com/repository/conduit-connector-nba-stats.version=${VERSION}'" -o conduit-connector-nba-stats cmd/connector/main.go
+	go build -o conduit-connector-nba-stats cmd/connector/main.go
 
 test:
 	go test $(GOTEST_FLAGS) -race ./...

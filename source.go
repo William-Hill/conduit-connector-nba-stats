@@ -5,8 +5,10 @@ package nbastats
 import (
 	"context"
 	"fmt"
+	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
+	"golang.org/x/time/rate"
 )
 
 type Source struct {
@@ -14,6 +16,7 @@ type Source struct {
 
 	config           SourceConfig
 	lastPositionRead sdk.Position //nolint:unused // this is just an example
+	limiter          *rate.Limiter
 }
 
 type SourceConfig struct {
@@ -59,6 +62,7 @@ func (s *Source) Open(ctx context.Context, pos sdk.Position) error {
 	// last record that was successfully processed, Source should therefore
 	// start producing records after this position. The context passed to Open
 	// will be cancelled once the plugin receives a stop signal from Conduit.
+	s.limiter = rate.NewLimiter(rate.Every(s.config.PollingPeriod), 1)
 	return nil
 }
 
@@ -77,7 +81,17 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	// After Read returns an error the function won't be called again (except if
 	// the error is ErrBackoffRetry, as mentioned above).
 	// Read can be called concurrently with Ack.
-	return sdk.Record{}, nil
+	err := s.limiter.Wait(ctx)
+	if err != nil {
+		return sdk.Record{}, err
+	} else {
+		sdk.Logger(ctx).Info().Msgf("Waiting for %s before next request for data", s.config.PollingPeriod)
+	}
+	rec, err := s.getRecord(ctx)
+	if err != nil {
+		return sdk.Record{}, fmt.Errorf("error getting the weather data: %w", err)
+	}
+	return rec, nil
 }
 
 func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
@@ -87,6 +101,7 @@ func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
 	// outstanding acks that need to be delivered. When Teardown is called it is
 	// guaranteed there won't be any more calls to Ack.
 	// Ack can be called concurrently with Read.
+	sdk.Logger(ctx).Debug().Str("position", string(position)).Msg("got ack")
 	return nil
 }
 
@@ -95,4 +110,29 @@ func (s *Source) Teardown(ctx context.Context) error {
 	// other function. After Teardown returns, the plugin should be ready for a
 	// graceful shutdown.
 	return nil
+}
+
+func (s *Source) getRecord(ctx context.Context) (sdk.Record, error) {
+	speedDistanceData, err := fetchNBASpeedDistanceStats(s.config.PerMode)
+	if err != nil {
+		return sdk.Record{}, err
+	}
+
+	sdk.Logger(ctx).Info().Msg("Successfully fetched the NBA Speed and Distance data...")
+	// Get current timestamp
+	currentTime := time.Now()
+
+	// Format the timestamp as a string (You can customize the format as needed)
+	timestampStr := currentTime.Format("2006-01-02-1504")
+
+	// Create the final string using the pattern with the formatted timestamp
+	key := fmt.Sprintf("%s_%s", timestampStr, s.config.PerMode)
+	recordKey := sdk.RawData(key)
+	recordValue := sdk.RawData(speedDistanceData)
+	return sdk.Util.Source.NewRecordCreate(
+		sdk.Position(recordKey),
+		nil,
+		recordKey,
+		recordValue,
+	), nil
 }
