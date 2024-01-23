@@ -3,6 +3,7 @@ package nbastats
 //go:generate paramgen -output=paramgen_src.go SourceConfig
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"time"
@@ -14,9 +15,10 @@ import (
 type Source struct {
 	sdk.UnimplementedSource
 
-	config           SourceConfig
-	lastPositionRead sdk.Position //nolint:unused // this is just an example
-	limiter          *rate.Limiter
+	config                  SourceConfig
+	lastPositionRead        sdk.Position //nolint:unused // this is just an example
+	limiter                 *rate.Limiter
+	cachedSpeedDistanceData []byte
 }
 
 type SourceConfig struct {
@@ -118,7 +120,13 @@ func (s *Source) getRecord(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, err
 	}
 
-	sdk.Logger(ctx).Info().Msg("Successfully fetched the NBA Speed and Distance data...")
+	if s.cachedSpeedDistanceData == nil || bytes.Equal(speedDistanceData, s.cachedSpeedDistanceData) == false {
+		s.cachedSpeedDistanceData = speedDistanceData
+		sdk.Logger(ctx).Info().Msg("Successfully fetched the NBA Speed and Distance data...")
+	} else {
+		sdk.Logger(ctx).Info().Msg("Fetched stats data is same as cached data....")
+		return sdk.Record{}, nil
+	}
 	// Get current timestamp
 	currentTime := time.Now()
 
