@@ -1,4 +1,4 @@
-module github.com/repository/conduit-connector-nba-stats
+module github.com/William-Hill/conduit-connector-nba-stats
 
 go 1.20
 

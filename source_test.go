@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	nbastats "github.com/William-Hill/conduit-connector-nba-stats"
 	"github.com/matryer/is"
-	nbastats "github.com/repository/conduit-connector-nba-stats"
 )
 
 func TestTeardownSource_NoOpen(t *testing.T) {
