@@ -7,23 +7,21 @@ import (
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
-func (SourceConfig) Parameters() map[string]sdk.Parameter {
+func (Config) Parameters() map[string]sdk.Parameter {
 	return map[string]sdk.Parameter{
-		"foo": {
-			Default:     "",
-			Description: "foo is named foo and must be provided by the user.",
+		"per_mode": {
+			Default:     "PerGame",
+			Description: "per_mode determines if the stats to be queried should be the per game average or the cumulative totals",
 			Type:        sdk.ParameterTypeString,
 			Validations: []sdk.Validation{
 				sdk.ValidationRequired{},
 			},
 		},
-		"global_config_param_name": {
-			Default:     "",
-			Description: "global_config_param_name is named global_config_param_name and needs to be provided by the user.",
-			Type:        sdk.ParameterTypeString,
-			Validations: []sdk.Validation{
-				sdk.ValidationRequired{},
-			},
+		"pollingPeriod": {
+			Default:     "5m",
+			Description: "how often the connector will get data from the url",
+			Type:        sdk.ParameterTypeDuration,
+			Validations: []sdk.Validation{},
 		},
 	}
 }
